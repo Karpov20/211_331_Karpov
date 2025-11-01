@@ -2,11 +2,15 @@
 #define QAESENCRYPTION_H
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #ifdef QtAES_EXPORTS
 #include "qtaes_export.h"
 #else
 #define QTAESSHARED_EXPORT
 #endif
+=======
+#define QTAESSHARED_EXPORT
+>>>>>>> Stashed changes
 =======
 #define QTAESSHARED_EXPORT
 >>>>>>> Stashed changes

@@ -1,4 +1,5 @@
 #Requires -Version 5.1
+<<<<<<< Updated upstream
 <#
 .SYNOPSIS
 Шифрует указанный JSON-файл с помощью AES-256-CBC и сохраняет результат в Base64.
@@ -11,6 +12,13 @@ param(
     [string]$Input,
     [Parameter(Mandatory = $true)]
     [string]$Output
+=======
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$InputPath,
+    [Parameter(Mandatory = $true)]
+    [string]$OutputPath
+>>>>>>> Stashed changes
 )
 
 function Convert-HexToBytes {
@@ -27,11 +35,19 @@ $ivHex = "1af38c2dc2b96ffdd86694092341bc04"
 $key = Convert-HexToBytes $keyHex
 $iv = Convert-HexToBytes $ivHex
 
+<<<<<<< Updated upstream
 if (-not (Test-Path $Input)) {
     throw "Файл '$Input' не найден."
 }
 
 $plain = [System.IO.File]::ReadAllText((Resolve-Path $Input))
+=======
+if (-not (Test-Path $InputPath)) {
+    throw "Файл '$InputPath' не найден."
+}
+
+$plain = [System.IO.File]::ReadAllText((Resolve-Path $InputPath))
+>>>>>>> Stashed changes
 $plainBytes = [System.Text.Encoding]::UTF8.GetBytes($plain)
 
 $aes = [System.Security.Cryptography.Aes]::Create()
@@ -48,6 +64,7 @@ $encryptor.Dispose()
 $aes.Dispose()
 
 $base64 = [Convert]::ToBase64String($cipherBytes)
+<<<<<<< Updated upstream
 
 $resolvedOutput = $null
 try {
@@ -60,4 +77,14 @@ try {
     $resolvedOutput = [System.IO.Path]::GetFullPath($Output)
 }
 
+=======
+$resolvedOutput = $OutputPath
+if (-not [System.IO.Path]::IsPathRooted($resolvedOutput)) {
+    $resolvedOutput = Join-Path (Get-Location) $resolvedOutput
+}
+$directory = [System.IO.Path]::GetDirectoryName($resolvedOutput)
+if ($directory -and -not (Test-Path $directory)) {
+    New-Item -ItemType Directory -Path $directory | Out-Null
+}
+>>>>>>> Stashed changes
 [System.IO.File]::WriteAllText($resolvedOutput, $base64)
