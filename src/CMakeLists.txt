@@ -2,11 +2,19 @@ set(SOURCES
     main.cpp
     mainwindow.cpp
     crypto/qaesencryption.cpp
+<<<<<<< Updated upstream
+=======
+    security/securitymanager.cpp
+>>>>>>> Stashed changes
 )
 
 set(HEADERS
     mainwindow.h
     crypto/qaesencryption.h
+<<<<<<< Updated upstream
+=======
+    security/securitymanager.h
+>>>>>>> Stashed changes
 )
 
 add_executable(${PROJECT_NAME}
