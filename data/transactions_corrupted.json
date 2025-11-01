@@ -1,0 +1,32 @@
+[
+    {
+        "article": "1234567890",
+        "quantity": 10,
+        "timestamp": 1717228800,
+        "hash": "dOcU5meEj1ms02jLjsPx+A=="
+    },
+    {
+        "article": "9876543210",
+        "quantity": 5,
+        "timestamp": 1717315200,
+        "hash": "yE0j1H18rAU2NmpSOc4xmA=="
+    },
+    {
+        "article": "5551237890",
+        "quantity": 15,
+        "timestamp": 1717401600,
+        "hash": "eUAPhfPgeT1BgQGSg8hFww=="
+    },
+    {
+        "article": "3141592653",
+        "quantity": 8,
+        "timestamp": 1717488000,
+        "hash": "mRCZ8IGvYCfW51HcvSu95g=="
+    },
+    {
+        "article": "2718281828",
+        "quantity": 20,
+        "timestamp": 1717574400,
+        "hash": "QRrw8ouT3Ylkpxvtl2vvTg=="
+    }
+]
