@@ -1,27 +1,24 @@
 # 211_331_Karpov
 
-## Описание
-Приложение Qt отображает журнал отгрузок в адаптивной сетке `QGridLayout`, контролирует целостность записей по цепочке MD5 и подсвечивает нарушения. Данные читаются из JSON либо из зашифрованных AES-256-CBC файлов (в Base64). При каждом запуске выполняется фоновая защита: обнаружение присоединения отладчика через системные API Windows и проверка контрольной суммы сегмента `.text` в виртуальной памяти, что позволяет прекратить работу при попытках взлома или модификации кода во время выполнения.
+## Overview
 
-## Сборка
-1. `cmake -S . -B build`
-2. `cmake --build build`
-3. Запустить `build/ShipmentLedger.exe`
+Qt Widgets application for validating shipment transactions described in JSON files.
+Records are rendered in a grid layout; if the calculated hash chain diverges from the
+stored value, the affected record and every subsequent one are highlighted in red.
 
-Необходимо наличие Qt 6 (Widgets) и компилятора C++17.
+## Building
 
-## Работа с данными
-- При старте загружается `data/transactions_valid.json.enc`.
-- Кнопка «Открыть» принимает файлы `.json` и `.enc`.
-- Для демонстрации ошибок предусмотрен `data/transactions_corrupted.json.enc`, где третья запись нарушает цепочку.
+```
+cmake -S . -B build
+cmake --build build
+```
 
-## Защита
-- Модуль `security/securitymanager.cpp` выключает приложение при обнаружении отладчика (`IsDebuggerPresent`, `CheckRemoteDebuggerPresent`, `NtQueryInformationProcess`, `DebugActiveProcessStop`).
-- На старте сверяется контрольная сумма встроенного блока данных, затем в фоновом таймере вычисляется CRC32 сегмента `.text`; при несоответствии выводится предупреждение и процесс завершается.
+Run the executable produced in `build/ShipmentLedger.exe`. By default the application
+loads `data/transactions_valid.json`.
 
-## Скриншоты
-![Корректные данные](docs/images/valid_view.png)
-![Цепочка нарушена](docs/images/corrupted_view.png)
+## Demo Data
 
-## Шифрование файлов
-Тестовые наборы зашифрованы ключом AES-256 `ab9f5f69737f3f02f1e2a6d17305eae239f2bba9d6a8ed5e322ad87d3654c9d8` и IV `1af38c2dc2b96ffdd86694092341bc04`. Скрипт `data/encrypt.ps1` позволяет повторить шифрование для обновлённых JSON.
+Two JSON samples demonstrate the hash validation flow:
+
+- `data/transactions_valid.json` contains a consistent chain of five records.
+- `data/transactions_corrupted.json` modifies one record and triggers the red highlight.
