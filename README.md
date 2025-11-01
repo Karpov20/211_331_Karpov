@@ -6,7 +6,7 @@
 ## Сборка
 1. `cmake -S . -B build`
 2. `cmake --build build`
-3. Запустите `build/ShipmentLedger.exe`
+3. Запустите `build/211_331_Karpov.exe`
 
 Необходимо установить Qt 6 с модулем Widgets и компилятор, поддерживающий стандарт C++17.
 
@@ -25,3 +25,13 @@
 
 ## Шифрование файлов
 Тестовые данные шифруются ключом AES-256 `ab9f5f69737f3f02f1e2a6d17305eae239f2bba9d6a8ed5e322ad87d3654c9d8` и вектором IV `1af38c2dc2b96ffdd86694092341bc04`. Скрипт PowerShell `data/encrypt.ps1` позволяет повторить процедуру шифрования для любых обновлённых JSON-файлов.
+
+## Генерация данных
+Для автоматического подсчёта хеш-цепочки и шифрования входит консольный инструмент:
+
+```
+cmake --build build --target transactions_tool
+build/Desktop_Qt_6_5_3_MinGW_64_bit-Debug/transactions_tool.exe
+```
+
+Утилита последовательно запрашивает артикул, количество и unix timestamp, рассчитывает `hash_i = MD5(article_i + quantity_i + timestamp_i + hash_{i-1})`, сохраняет результирующий JSON и зашифрованный `.json.enc` файл рядом с исполняемым файлом.
