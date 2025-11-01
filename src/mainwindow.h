@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QMainWindow>
 #include <QVector>
 
@@ -40,6 +41,8 @@ private:
     void renderTransactions(const QVector<Transaction> &transactions);
     /// Computes hash chain status for the provided transactions.
     QVector<Transaction> validateTransactions(const QVector<Transaction> &rawTransactions) const;
+    /// Attempts to decrypt AES-256 payload when JSON не читается напрямую.
+    QByteArray tryDecryptPayload(const QByteArray &rawPayload, bool &ok) const;
 
     QPushButton *m_openButton = nullptr;
     QScrollArea *m_scrollArea = nullptr;

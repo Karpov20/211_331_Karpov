@@ -1,15 +1,21 @@
 #include "mainwindow.h"
 
+#include "crypto/qaesencryption.h"
+
+#include <QByteArray>
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 #include <QLabel>
+#include <QLayoutItem>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
@@ -19,9 +25,22 @@
 #include <QVBoxLayout>
 
 namespace {
-constexpr auto kDefaultFile = "data/transactions_valid.json";
+constexpr auto kDefaultFile = "data/transactions_generated.json.enc";
 
-/// Returns a label configured for the data grid.
+const QByteArray &aesKey()
+{
+    static const QByteArray key = QByteArray::fromHex(
+        "ab9f5f69737f3f02f1e2a6d17305eae239f2bba9d6a8ed5e322ad87d3654c9d8"
+    );
+    return key;
+}
+
+const QByteArray &aesIv()
+{
+    static const QByteArray iv = QByteArray::fromHex("1af38c2dc2b96ffdd86694092341bc04");
+    return iv;
+}
+
 QLabel *createCellLabel(const QString &text, QWidget *parent = nullptr)
 {
     auto *label = new QLabel(text, parent);
@@ -40,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupUi()
 {
-    setWindowTitle(tr("Чек-лист отгрузок"));
+    setWindowTitle(tr("Журнал отгрузок"));
     resize(900, 600);
 
     auto *central = new QWidget(this);
@@ -80,9 +99,9 @@ void MainWindow::onOpenFileRequested()
 {
     const QString filePath = QFileDialog::getOpenFileName(
         this,
-        tr("Выберите JSON-файл с данными"),
+        tr("Выберите файл транзакций"),
         m_currentFilePath.isEmpty() ? QString::fromUtf8(kDefaultFile) : m_currentFilePath,
-        tr("JSON файлы (*.json)")
+        tr("JSON или зашифрованные файлы (*.json *.enc)")
     );
 
     if (!filePath.isEmpty()) {
@@ -99,7 +118,7 @@ void MainWindow::loadFromFile(const QString &filePath)
         return;
     }
 
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::critical(this, tr("Ошибка чтения"),
                               tr("Не удалось открыть \"%1\": %2")
                                   .arg(filePath, file.errorString()));
@@ -107,11 +126,25 @@ void MainWindow::loadFromFile(const QString &filePath)
     }
 
     const QByteArray payload = file.readAll();
-    const auto jsonDoc = QJsonDocument::fromJson(payload);
-    if (!jsonDoc.isArray()) {
-        QMessageBox::critical(this, tr("Ошибка формата"),
-                              tr("Файл должен содержать массив записей."));
-        return;
+    QJsonParseError parseError{};
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(payload, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError || !jsonDoc.isArray()) {
+        bool decryptOk = false;
+        const QByteArray decryptedPayload = tryDecryptPayload(payload, decryptOk);
+        if (!decryptOk) {
+            QMessageBox::critical(this, tr("Ошибка формата"),
+                                  tr("Файл не является валидным JSON и не удалось выполнить расшифровку AES-256."));
+            return;
+        }
+
+        jsonDoc = QJsonDocument::fromJson(decryptedPayload, &parseError);
+        if (parseError.error != QJsonParseError::NoError || !jsonDoc.isArray()) {
+            QMessageBox::critical(this, tr("Ошибка формата"),
+                                  tr("После расшифровки JSON повреждён: %1.")
+                                      .arg(parseError.errorString()));
+            return;
+        }
     }
 
     QVector<Transaction> rawTransactions;
@@ -134,9 +167,9 @@ void MainWindow::loadFromFile(const QString &filePath)
     const QVector<Transaction> transactions = validateTransactions(rawTransactions);
     renderTransactions(transactions);
     m_currentFilePath = filePath;
-    statusBar()->showMessage(tr("Загружено записей: %1 из \"%2\"")
+    statusBar()->showMessage(tr("Загружено записей: %1 (%2)")
                                  .arg(transactions.size())
-                                 .arg(filePath));
+                                 .arg(QFileInfo(filePath).fileName()));
 }
 
 void MainWindow::clearGrid()
@@ -156,7 +189,7 @@ void MainWindow::renderTransactions(const QVector<Transaction> &transactions)
     const QStringList headers = {
         tr("Артикул"),
         tr("Количество"),
-        tr("Отгрузка (UTC)"),
+        tr("Время отгрузки (UTC)"),
         tr("Хеш из файла"),
         tr("Пересчитанный хеш")
     };
@@ -231,4 +264,33 @@ QVector<MainWindow::Transaction> MainWindow::validateTransactions(const QVector<
     }
 
     return validated;
+}
+
+QByteArray MainWindow::tryDecryptPayload(const QByteArray &rawPayload, bool &ok) const
+{
+    ok = false;
+
+    const QByteArray trimmed = QByteArray(rawPayload).trimmed();
+    if (trimmed.isEmpty()) {
+        return {};
+    }
+
+    const QByteArray cipher = QByteArray::fromBase64(trimmed, QByteArray::Base64Encoding);
+    if (cipher.isEmpty() || cipher.size() % 16 != 0) {
+        return {};
+    }
+
+    QAESEncryption aes(QAESEncryption::AES_256, QAESEncryption::CBC, QAESEncryption::PKCS7);
+    QByteArray decrypted = aes.decode(cipher, aesKey(), aesIv());
+    if (decrypted.isEmpty()) {
+        return {};
+    }
+
+    decrypted = QAESEncryption::RemovePadding(decrypted, QAESEncryption::PKCS7);
+    if (decrypted.isEmpty()) {
+        return {};
+    }
+
+    ok = true;
+    return decrypted;
 }
