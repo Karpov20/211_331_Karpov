@@ -138,6 +138,8 @@ public:
             requestShutdown(QStringLiteral("Не удалось инициализировать контрольную сумму приложения."));
             return;
         }
+        qInfo().nospace() << "[Integrity] CRC32 секции .text (старт) = 0x"
+                          << QString::number(m_textSectionChecksum, 16).toUpper();
 
         startAntiDebugThread();
         scheduleIntegrityTimer();
@@ -149,6 +151,10 @@ private:
     {
         const auto checksum = crc32(reinterpret_cast<const quint8 *>(kIntegrityBlock),
                                     sizeof(kIntegrityBlock) - 1);
+        qInfo().nospace() << "[Integrity] Статический блок CRC32 = 0x"
+                          << QString::number(checksum, 16).toUpper()
+                          << " (ожидалось 0x"
+                          << QString::number(kIntegrityExpected, 16).toUpper() << ')';
         if (checksum != kIntegrityExpected) {
             qWarning().noquote()
                 << QStringLiteral("CRC32 mismatch for integrity block: expected 0x%1, actual 0x%2")
@@ -165,6 +171,8 @@ private:
         timer->setInterval(3000);
         connect(timer, &QTimer::timeout, this, [this]() {
             const auto current = computeTextSectionChecksum();
+            qInfo().nospace() << "[Integrity] CRC32 секции .text (проверка) = 0x"
+                              << QString::number(current, 16).toUpper();
             if (current == 0 || current != m_textSectionChecksum) {
                 requestShutdown(QStringLiteral("Целостность кода нарушена."));
             }
