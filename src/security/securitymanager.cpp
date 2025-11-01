@@ -1,6 +1,7 @@
 #include "securitymanager.h"
 
 #include <QCoreApplication>
+#include <QDebug>
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QObject>
@@ -21,8 +22,8 @@
 namespace security {
 namespace {
 
-constexpr quint32 kIntegrityExpected = 0x17911B6A;
 constexpr unsigned char kIntegrityBlock[] = "ShipmentLedgerIntegrityBlock_v1";
+constexpr quint32 kIntegrityExpected = 0xBB12CCF0;
 
 quint32 crc32(const quint8 *data, size_t length)
 {
@@ -148,6 +149,12 @@ private:
     {
         const auto checksum = crc32(reinterpret_cast<const quint8 *>(kIntegrityBlock),
                                     sizeof(kIntegrityBlock) - 1);
+        if (checksum != kIntegrityExpected) {
+            qWarning().noquote()
+                << QStringLiteral("CRC32 mismatch for integrity block: expected 0x%1, actual 0x%2")
+                       .arg(QString::number(kIntegrityExpected, 16).rightJustified(8, QLatin1Char('0')).toUpper())
+                       .arg(QString::number(checksum, 16).rightJustified(8, QLatin1Char('0')).toUpper());
+        }
         return checksum == kIntegrityExpected;
     }
 
