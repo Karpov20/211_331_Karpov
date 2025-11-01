@@ -25,7 +25,7 @@
 #include <QVBoxLayout>
 
 namespace {
-constexpr auto kDefaultFile = "data/transactions_valid.json.enc";
+constexpr auto kDefaultFile = "data/transactions_generated.json.enc";
 
 const QByteArray &aesKey()
 {
