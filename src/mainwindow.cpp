@@ -281,7 +281,12 @@ QByteArray MainWindow::tryDecryptPayload(const QByteArray &rawPayload, bool &ok)
     }
 
     QAESEncryption aes(QAESEncryption::AES_256, QAESEncryption::CBC, QAESEncryption::PKCS7);
-    const QByteArray decrypted = aes.decode(cipher, aesKey(), aesIv());
+    QByteArray decrypted = aes.decode(cipher, aesKey(), aesIv());
+    if (decrypted.isEmpty()) {
+        return {};
+    }
+
+    decrypted = QAESEncryption::RemovePadding(decrypted, QAESEncryption::PKCS7);
     if (decrypted.isEmpty()) {
         return {};
     }
